@@ -112,9 +112,9 @@ them weight.
 
 - Text is measured by the block, not by the line, so the flora does not reach into
   the space beside a short last line. Gaps between blocks work as they should.
-- Paragraphs, headings, figures, lists, tables, block equations and code blocks are
-  measured. Other content, such as a bare `#rect` or `#image` outside a figure, is
-  not, and flora can grow over it if it stands in a gap.
+- Paragraphs, headings, figures, lists, tables, block equations, code blocks and the
+  bibliography are measured. Other content, such as a bare `#rect` or `#image` outside
+  a figure, is not, and flora can grow over it if it stands in a gap.
 - Multiple columns are assumed to use the default gutter.
 
 ## Credits

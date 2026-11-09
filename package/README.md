@@ -11,7 +11,7 @@ stock images. No tool is needed beyond Typst.
 ## Quick start
 
 ```typ
-#import "@preview/hortulus:0.1.0": flora
+#import "@preview/hortulus:0.1.1": flora
 
 #set page(margin: (left: 2.5cm, right: 5.5cm, y: 2.5cm))
 #show: flora.with(layout: "right", colourway: "spring", seed: 7)
@@ -44,10 +44,12 @@ The plant grows around what the page holds: a gap in the text, a table and an eq
 
 ## Compile times
 
-A page takes about 3 to 6 seconds to grow, depending on the layout and how full it
-is. Typst remembers finished pages, so while you edit (with `typst watch`, say),
-only the pages whose text moved grow again. Pass `draft: true` to leave the flora
-out altogether while you write.
+A page takes about 3 to 4 seconds to grow, depending on the layout and how full it
+is, and adds about 4 to 6 MB to the PDF. Typst remembers finished pages, so while
+you edit (with `typst watch`, say), only the pages whose text moved grow again. A
+document that needs extra layout passes to settle, as one with citations does, may
+grow some pages more than once. Pass `draft: true` to leave the flora out
+altogether while you write.
 
 ## Options
 
@@ -111,7 +113,7 @@ them weight.
 ## Changing options along the way
 
 ```typ
-#import "@preview/hortulus:0.1.0": flora, flora-setup, flora-page, flora-title
+#import "@preview/hortulus:0.1.1": flora, flora-setup, flora-page, flora-title
 
 #set page(margin: 3.2cm)
 #show: flora.with(layout: "title", colourway: "winter")

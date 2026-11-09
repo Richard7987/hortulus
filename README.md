@@ -1,19 +1,26 @@
 # Hortulus
 
-Watercolour flora and gilt ornaments grown in the margins of Typst documents.
+[![Typst Universe](https://img.shields.io/badge/Typst_Universe-hortulus-239dad?logo=typst&logoColor=white)](https://typst.app/universe/package/hortulus)
+[![Package version](https://img.shields.io/badge/dynamic/toml?url=https%3A%2F%2Fraw.githubusercontent.com%2FRichard7987%2Fhortulus%2Fmain%2Fpackage%2Ftypst.toml&query=%24.package.version&label=version&color=239dad)](package/typst.toml)
+[![Typst version](https://img.shields.io/badge/dynamic/toml?url=https%3A%2F%2Fraw.githubusercontent.com%2FRichard7987%2Fhortulus%2Fmain%2Fpackage%2Ftypst.toml&query=%24.package.compiler&label=typst&prefix=%E2%89%A5%20&color=239dad)](https://github.com/typst/typst/releases)
+[![Latest release](https://img.shields.io/github/v/release/Richard7987/hortulus)](https://github.com/Richard7987/hortulus/releases/latest)
+[![License: MIT](https://img.shields.io/github/license/Richard7987/hortulus)](LICENSE)
+[![Plugin: Rust to WebAssembly](https://img.shields.io/badge/plugin-Rust_%E2%86%92_WebAssembly-dea584?logo=rust&logoColor=white)](plugin/)
 
-**Version 0.1.0.** [Release notes](https://github.com/Richard7987/hortulus/releases/tag/v0.1.0) ·
+Watercolour flora and gilt ornaments grown in the margins of Typst documents. Every page
+grows its own plant around the text it holds, computed when the document compiles and
+painted as vector paths. No tool is needed beyond Typst.
+
 [Full documentation](package/README.md) ·
-[Typst Universe submission](https://github.com/typst/packages/pull/6288) (in review)
+[Typst Universe](https://typst.app/universe/package/hortulus) ·
+[Releases](https://github.com/Richard7987/hortulus/releases)
 
 <img src="package/images/gallery.png" alt="Four pages: a right margin, a crowned title page, a wreath around the text, and flora in both margins" width="100%">
 
 ## Quick start
 
-Until the package is on Typst Universe, copy `package/` next to your document as `hortulus/`:
-
 ```typ
-#import "hortulus/lib.typ": flora
+#import "@preview/hortulus:0.1.0": flora
 
 #set page(margin: (left: 2.5cm, right: 5.5cm, y: 2.5cm))
 #show: flora.with(layout: "right", colourway: "spring", seed: 7)
@@ -22,7 +29,21 @@ Until the package is on Typst Universe, copy `package/` next to your document as
 #lorem(200)
 ```
 
-Once it is published, import it as `@preview/hortulus:0.1.0`.
+Give the flora room: about 5 cm for a side margin, or 3 cm all round for `surround`.
+Every option is described in the [documentation](package/README.md#options). Pass
+`draft: true` to leave the flora out while you write.
+
+## Changes
+
+**0.1.1** (in this repository, not yet on Typst Universe)
+
+- PDFs about 45% smaller, and each page embeds faster: coordinates are written to a
+  tenth of a point, and the smallest dots as squares or octagons of the same area, all
+  within 0.03 mm of the previous drawing.
+- A page whose spec has not changed is no longer grown again after an edit elsewhere in
+  the document.
+
+**0.1.0**: first release.
 
 ## Gallery
 
@@ -68,6 +89,8 @@ With `typst` and ImageMagick on your path, `tools/build_gallery.sh` paints the g
 
 With `texlua` on your path and the native build in place (`cargo build --release` in `plugin/`),
 `tools/run_matrix.sh` paints each case with both generators and compares the output byte for byte.
+The package itself writes a more compact encoding of the same drawing; pass `compact` as a
+fourth argument to `native` to get it.
 
 ## License
 

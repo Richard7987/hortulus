@@ -77,6 +77,11 @@
   out
 }
 
+// Typst caches calls to Typst functions but not to plugins: through this wrapper a
+// page whose spec has not changed skips growing again, in a later layout pass or
+// after an edit elsewhere in the document.
+#let _paint(spec, settings) = _plugin.page(bytes(spec), bytes(settings))
+
 #let _background(base) = context {
   // The first layout pass has measured nothing yet: painting it would be wasted.
   if query(<hortulus-ready>).len() == 0 { return }
@@ -112,7 +117,7 @@
   numbers += title
   for l in lines { numbers += l.map(str) }
   image(
-    _plugin.page(bytes(numbers.join(" ")), bytes(_settings(opts))),
+    _paint(numbers.join(" "), _settings(opts)),
     format: "pdf",
     width: 100%,
     height: 100%,

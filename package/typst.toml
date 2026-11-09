@@ -1,6 +1,6 @@
 [package]
 name = "hortulus"
-version = "0.1.0"
+version = "0.1.1"
 entrypoint = "lib.typ"
 authors = ["Richard7987 <@Richard7987>"]
 license = "MIT"

@@ -11,7 +11,7 @@ stock images. No tool is needed beyond Typst.
 ## Quick start
 
 ```typ
-#import "@preview/hortulus:0.1.1": flora
+#import "@preview/hortulus:0.1.2": flora
 
 #set page(margin: (left: 2.5cm, right: 5.5cm, y: 2.5cm))
 #show: flora.with(layout: "right", colourway: "spring", seed: 7)
@@ -61,6 +61,7 @@ altogether while you write.
 | `layout` | `"left"`, `"right"`, `"centered"`, `"split"`, `"title"`, `"surround"` | Where the flora grows |
 | `colourway` | `"spring"`, `"summer"`, `"autumn"`, `"winter"`, `"ember"`, `"plum"`, `"rose"`, `"original"` | A whole palette at once |
 | `palette` | dictionary | What paints each part, such as `(hero: "kon-peki", leaves: "green")` |
+| `growth` | `"classic"`, `"natural"` | Shoots running beside the main stem (default), or side branches that branch again and end in blooms |
 | `density` | 0 to 10 | Fuller above 1, airier below it |
 | `visitors` | 0 to 10 | The weight of every visitor at once |
 | `mix` | dictionary | How much of each kind of growth, such as `(lily: 2, umbel: 0)` |
@@ -113,7 +114,7 @@ them weight.
 ## Changing options along the way
 
 ```typ
-#import "@preview/hortulus:0.1.1": flora, flora-setup, flora-page, flora-title
+#import "@preview/hortulus:0.1.2": flora, flora-setup, flora-page, flora-title
 
 #set page(margin: 3.2cm)
 #show: flora.with(layout: "title", colourway: "winter")

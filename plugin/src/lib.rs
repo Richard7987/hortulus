@@ -1,5 +1,6 @@
 //! Procedural watercolour margins for Typst: a port of tikz-flora's generator.
 
+mod branch;
 mod brush;
 mod color;
 pub mod compose;
@@ -76,6 +77,7 @@ pub fn page(spec_text: &str, settings_text: &str, compact: bool) -> Result<(Pain
         gilt_env: set.giltenv,
         gilt_look: set.giltlook,
         compact,
+        natural: set.growth.as_deref() == Some("natural"),
     };
     let pt = compose::page(&spec)?;
     Ok((pt, spec.width, spec.height))

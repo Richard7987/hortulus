@@ -10,7 +10,7 @@
   let out = ()
   for (key, name) in (
     ("seed", "seed"), ("layout", "layout"), ("colourway", "colourway"), ("density", "density"),
-    ("visitors", "visitors"), ("spin", "spin"), ("gilt", "gilt"), ("gilt-dpi", "giltdpi"), ("gilt-env", "giltenv"),
+    ("visitors", "visitors"), ("spin", "spin"), ("gilt", "gilt"), ("gilt-dpi", "giltdpi"), ("gilt-env", "giltenv"), ("growth", "growth"),
   ) {
     if key in opts { out.push(name + "=" + str(opts.at(key))) }
   }
@@ -133,6 +133,7 @@
 /// - colourway (str): `"spring"`, `"summer"`, `"autumn"`, `"winter"`, `"ember"`, `"plum"`,
 ///   `"rose"` or `"original"`.
 /// - palette (dictionary): what paints each part, such as `(hero: "kon-peki", leaves: "green")`.
+/// - growth (str): `"classic"` shoots beside the main stem, or `"natural"` branches that branch again and end in blooms.
 /// - density (int, float): fuller above 1, airier below it.
 /// - visitors (int, float): the weight of every visitor at once.
 /// - mix (dictionary): how much of each kind of growth, such as `(lily: 2, umbel: 0)`.

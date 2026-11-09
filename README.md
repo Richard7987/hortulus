@@ -20,7 +20,7 @@ painted as vector paths. No tool is needed beyond Typst.
 ## Quick start
 
 ```typ
-#import "@preview/hortulus:0.1.0": flora
+#import "@preview/hortulus:0.1.2": flora
 
 #set page(margin: (left: 2.5cm, right: 5.5cm, y: 2.5cm))
 #show: flora.with(layout: "right", colourway: "spring", seed: 7)
@@ -35,7 +35,15 @@ Every option is described in the [documentation](package/README.md#options). Pas
 
 ## Changes
 
-**0.1.1** (in this repository, not yet on Typst Universe)
+**0.1.2** (in this repository, not yet on Typst Universe)
+
+- `growth: "natural"`: side branches leave the main stem at a steady angle, bend back
+  towards the light and branch again; most end in a bloom, and leaves shrink towards each
+  tip. The default, `"classic"`, draws exactly as before.
+- The development checks need only Rust: `tools/run_matrix.sh` compares the native output
+  with stored checksums instead of running the Lua generator.
+
+**0.1.1**
 
 - PDFs about 45% smaller, and each page embeds faster: coordinates are written to a
   tenth of a point, and the smallest dots as squares or octagons of the same area, all
@@ -67,8 +75,6 @@ The plant grows around what the page holds: a gap in the text, a table and an eq
 
 - `package/`: the Typst package, as published.
 - `plugin/`: the Rust source of the package's WebAssembly plugin.
-- `reference/`: the Lua generator of [tikz-flora](https://github.com/wn-mitch/tikz-flora) (MIT),
-  which the plugin ports and is checked against.
 - `tools/`: the build scripts and the tests.
 
 ## Building the plugin
@@ -85,13 +91,14 @@ cp build/hortulus.wasm package/hortulus.wasm
 With `typst` and ImageMagick on your path, `tools/build_gallery.sh` paints the gallery from
 `tools/gallery/` into `package/images/`.
 
-## Checking against the reference
+## Checking for changes
 
-With `texlua` on your path and the native build in place (`cargo build --release` in `plugin/`),
-`tools/run_matrix.sh` paints each case with both generators and compares the output byte for byte.
-The package itself writes a more compact encoding of the same drawing; pass `compact` as a
-fourth argument to `native` to get it.
+`tools/run_matrix.sh` builds the native binary, paints each case and compares a checksum of
+the output with `tools/cases/expected.txt`. The classic cases were checked byte for byte
+against the Lua generator before it left the toolchain. After an intended change in the
+drawing, `UPDATE=1 tools/run_matrix.sh` writes the new sums. The package itself writes a more
+compact encoding of the same drawing; pass `compact` as a fourth argument to `native` to get it.
 
 ## License
 
-MIT. See `LICENSE`. `reference/` keeps its own license.
+MIT. See `LICENSE`. The plugin ports [tikz-flora](https://github.com/wn-mitch/tikz-flora) (MIT).

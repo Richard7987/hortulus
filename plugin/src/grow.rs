@@ -119,6 +119,7 @@ pub struct Ctx<'a> {
     pub leaves: Vec<Painter>,
     pub leaflets: Vec<[f64; 4]>,
     pub visitors: Vec<Painter>,
+    pub natural: bool,
     pub counts: HashMap<&'static str, i64>,
 }
 
@@ -142,6 +143,15 @@ fn stemlet(s: &mut Space, rng: &mut Rng, ctx: &mut Ctx, p: Pt, ang: f64, len: f6
     true
 }
 
+/// Leaves grow largest low on the main stem and midway along a branch, smaller towards each tip.
+fn shoot_profile(strand: usize, t: f64) -> f64 {
+    if strand == 0 {
+        0.75 + 0.35 * (1.0 - t)
+    } else {
+        0.8 * (0.5 + 0.5 * (PI * t.min(1.0)).sin())
+    }
+}
+
 pub fn node_leaves(s: &mut Space, rng: &mut Rng, ctx: &mut Ctx) {
     let strands = ctx.strands.clone();
     let sp = ctx.cfg.leaf_spacing;
@@ -158,8 +168,11 @@ pub fn node_leaves(s: &mut Space, rng: &mut Rng, ctx: &mut Ctx) {
             let (p, a) = g::at(&pts, d / total);
             let dn = (ctx.dens)(p[0], p[1]);
             side = -side;
-            let ang = a + side * rng.range(0.6, 1.05);
-            let len = (ctx.mw * 0.85).min(130.0) * ctx.cfg.leaf_size * (0.45 + 0.55 * dn) * dist::sample(rng, &sizes.leaf);
+            let ang = a + side * if ctx.natural { rng.range(0.7, 0.9) } else { rng.range(0.6, 1.05) };
+            let mut len = (ctx.mw * 0.85).min(130.0) * ctx.cfg.leaf_size * (0.45 + 0.55 * dn) * dist::sample(rng, &sizes.leaf);
+            if ctx.natural {
+                len *= shoot_profile(ki, d / total);
+            }
             let painted = if len >= 24.0 {
                 grow_leaf(s, &mut rng.fork(&format!("leaf{}.{}", k, n)), p, ang, len, ctx.cfg.leaf_overlap, st, d / total)
             } else {
@@ -184,12 +197,38 @@ pub fn node_leaves(s: &mut Space, rng: &mut Rng, ctx: &mut Ctx) {
     }
 }
 
+fn terminal_bloom(s: &mut Space, r: &mut Rng, ctx: &mut Ctx, p: Pt, a: f64) -> bool {
+    let n = *ctx.counts.get("bloom").unwrap_or(&0) as f64;
+    if n >= ctx.cfg.small_blooms + 3.0 || !r.chance(0.7) {
+        return false;
+    }
+    let want = (ctx.mw * r.range(0.08, 0.12)).max(9.0);
+    for k in [1.0, 0.75, 0.55] {
+        let rr = want * k;
+        let c = g::polar(p, a, rr * 0.55);
+        if rr >= 7.0 && s.room(c[0], c[1]) >= rr * 0.9 {
+            s.disc(c[0], c[1], rr, DISC_K);
+            let style = if r.chance(0.3) { "soft" } else { flower::pick_style(r, &["fan", "round"]) };
+            let mut fr = r.fork("bloom");
+            ctx.blooms.push(Box::new(move |pt: &mut Paint| {
+                flower::bloom(pt, &mut fr, c[0], c[1], rr * 0.8, &BloomOpts { style: Some(style), ..Default::default() });
+            }));
+            *ctx.counts.entry("bloom").or_insert(0) += 1;
+            return true;
+        }
+    }
+    false
+}
+
 pub fn tips(s: &mut Space, rng: &mut Rng, ctx: &mut Ctx) {
     let strands = ctx.strands.clone();
     for (ki, st) in strands.iter().enumerate() {
         let tip = st.borrow().tip;
         if let Some((p, a)) = tip {
             let mut r = rng.fork(&format!("tip{}", ki + 1));
+            if ctx.natural && terminal_bloom(s, &mut r, ctx, p, a) {
+                continue;
+            }
             let len = (ctx.mw * 0.7).min(110.0) * ctx.cfg.leaf_size * dist::sample(&mut r, &tune().sizes.leaf);
             let painted = if len >= 20.0 && ctx.cfg.leaves > 0.0 {
                 grow_leaf(s, &mut r, p, a, len, ctx.cfg.leaf_overlap, st, 1.0)

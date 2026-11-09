@@ -56,6 +56,8 @@ pub struct Spec {
     pub gilt_env: Option<String>,
     pub gilt_look: Vec<(String, f64)>,
     /// Shorter output for the package; the oracle keeps the reference encoding.
+    /// Side branches with their own branches, in place of shoots running beside the main stem.
+    pub natural: bool,
     pub compact: bool,
 }
 
@@ -88,8 +90,14 @@ fn plant(spec: &Spec, pt: &mut Paint) {
     let (ylo, span) = (m.y0, hero[1] - m.y0);
     let py = gest.quiet.first().copied().unwrap_or(ylo + span * 0.5);
     let (pw, ph) = layout::cartouche_size(mw, 1.0);
-    let (strands_raw, root) = layout::strands(&rng.fork("strands"), &m, hero, w, &gest, Some([m.x0, py - ph / 2.0 - 3.0, m.x0 + pw + 5.0, py + ph / 2.0 + 3.0]));
+    let avoid = Some([m.x0, py - ph / 2.0 - 3.0, m.x0 + pw + 5.0, py + ph / 2.0 + 3.0]);
+    let (strands_raw, root) = layout::strands(&rng.fork("strands"), &m, hero, w, &gest, avoid, spec.natural);
     let mut strands_raw: Vec<Stem> = strands_raw;
+    if spec.natural {
+        let (main, rest) = strands_raw.split_first_mut().unwrap();
+        let more = crate::branch::laterals(&mut rng.fork("branches"), &s, main, rest, &m, hero, avoid);
+        strands_raw.extend(more);
+    }
     if !spec.frame_only {
         if let Some(e) = layout::excursion(&mut rng.fork("excursion"), spec, root) {
             strands_raw.push(e);
@@ -153,6 +161,7 @@ fn plant(spec: &Spec, pt: &mut Paint) {
         leaflets: Vec::new(),
         visitors: Vec::new(),
         counts: HashMap::new(),
+        natural: spec.natural,
     };
     {
         let mut gr = rng.fork("ghost");

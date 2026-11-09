@@ -167,9 +167,9 @@ pub fn gesture(rng: &mut Rng, m: &Margin, hero: [f64; 3]) -> GestureField {
     GestureField { edge, bows, quiet, clusters, floor: cfg.density_floor }
 }
 
-pub fn strands(rng: &Rng, m: &Margin, hero: [f64; 3], w: f64, gest: &GestureField, avoid: Option<Box4>) -> (Vec<Stem>, Pt) {
+pub fn strands(rng: &Rng, m: &Margin, hero: [f64; 3], w: f64, gest: &GestureField, avoid: Option<Box4>, natural: bool) -> (Vec<Stem>, Pt) {
     let (mut main, corner, _) = plant::main_stem(&mut rng.fork("main"), m, hero, w, gest, avoid);
-    let long = plant::long_shoots(&mut rng.fork("shoots"), &mut main, m, hero, gest, avoid);
+    let long = if natural { Vec::new() } else { plant::long_shoots(&mut rng.fork("shoots"), &mut main, m, hero, gest, avoid) };
     let foot = plant::foot_shoots(&mut rng.fork("foot shoots"), &mut main, m, corner, avoid);
     let crown = plant::crown(&mut rng.fork("crown"), &mut main, m, hero);
     let mut out = vec![main];

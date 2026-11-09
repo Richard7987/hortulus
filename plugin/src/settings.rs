@@ -19,6 +19,7 @@ pub struct Settings {
     pub giltdpi: Option<f64>,
     pub giltenv: Option<String>,
     pub giltlook: Vec<(String, f64)>,
+    pub growth: Option<String>,
 }
 
 fn weight(v: &str) -> Option<f64> {
@@ -89,7 +90,7 @@ const COLOURWAY_ORDER: [&str; 8] = ["original", "spring", "summer", "autumn", "w
 pub fn parse(s: &str) -> Result<Settings, String> {
     let mut t = Settings::default();
     for (k, v) in parse_list(s)? {
-        let known_keys = "colourway, density, gilt, giltdpi, giltenv, giltlook, layout, mix, ornaments, palette, seed, spin, visitors";
+        let known_keys = "colourway, density, gilt, giltdpi, giltenv, giltlook, growth, layout, mix, ornaments, palette, seed, spin, visitors";
         if !known_keys.split(", ").any(|x| x == k) {
             return Err(format!("unknown key \"{}\" (known keys: {})", k, known_keys));
         }
@@ -101,6 +102,12 @@ pub fn parse(s: &str) -> Result<Settings, String> {
                     return Err(wrap("layout must be one of left, right, centered, split, title, surround".into()));
                 }
                 t.layout = Some(v.clone());
+            }
+            "growth" => {
+                if v != "classic" && v != "natural" {
+                    return Err(wrap("growth must be classic or natural".into()));
+                }
+                t.growth = Some(v.clone());
             }
             "seed" => {
                 t.seed = Some(v.parse::<f64>().map_err(|_| wrap("seed must be a number".into()))?);

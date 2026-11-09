@@ -55,6 +55,8 @@ pub struct Spec {
     pub gilt_dpi: Option<f64>,
     pub gilt_env: Option<String>,
     pub gilt_look: Vec<(String, f64)>,
+    /// Shorter output for the package; the oracle keeps the reference encoding.
+    pub compact: bool,
 }
 
 fn plant(spec: &Spec, pt: &mut Paint) {
@@ -334,6 +336,7 @@ fn new_painter(spec: &Spec) -> Paint {
     }
     pt.gilt_env = spec.gilt_env.clone();
     pt.gilt_look = spec.gilt_look.clone();
+    pt.compact = spec.compact;
     pt
 }
 

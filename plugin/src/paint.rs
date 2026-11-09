@@ -63,6 +63,8 @@ pub struct Paint {
     pub gilt_dpi: f64,
     pub gilt_env: Option<String>,
     pub gilt_look: Vec<(String, f64)>,
+    /// Coordinates to a tenth of a point, and small dots as polygons.
+    pub compact: bool,
     pub gilding: bool,
     pub flat_gilt: bool,
     pub gilt_pending: Option<crate::orn_raster::Pending>,
@@ -114,6 +116,39 @@ fn f2(s: &mut String, v: f64) {
     write!(s, "{:.2}", v).unwrap();
 }
 
+/// A tenth of a point, without a trailing `.0`.
+#[inline]
+fn f1(s: &mut String, v: f64) {
+    let a = v.abs();
+    if !(a < 9999.95) {
+        write!(s, "{:.1}", v).unwrap();
+        return;
+    }
+    let n = (a * 10.0 + 0.5) as u32;
+    let (whole, tenth) = (n / 10, n % 10);
+    let mut d = [0u8; 8];
+    let mut i = 0;
+    if v < 0.0 && n != 0 {
+        d[0] = b'-';
+        i = 1;
+    }
+    for div in [1000, 100, 10] {
+        if whole >= div {
+            d[i] = b'0' + (whole / div % 10) as u8;
+            i += 1;
+        }
+    }
+    d[i] = b'0' + (whole % 10) as u8;
+    i += 1;
+    if tenth != 0 {
+        d[i] = b'.';
+        d[i + 1] = b'0' + tenth as u8;
+        i += 2;
+    }
+    // ASCII digits only.
+    unsafe { s.as_mut_vec() }.extend_from_slice(&d[..i]);
+}
+
 #[inline]
 fn n2(s: &mut String, v: f64) {
     let start = s.len();
@@ -143,32 +178,88 @@ pub fn mix(a: Rgb, b: Rgb, t: f64) -> Rgb {
     [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t]
 }
 
+#[inline(always)]
+fn num<const C: bool>(s: &mut String, v: f64) {
+    if C { f1(s, v) } else { f2(s, v) }
+}
+
+#[inline(always)]
+fn space(s: &mut String) {
+    // ASCII only.
+    unsafe { s.as_mut_vec() }.push(b' ');
+}
+
 #[inline]
-fn op_m(buf: &mut String, x: f64, y: f64) {
-    f2(buf, x * BP);
-    buf.push(' ');
-    f2(buf, y * BP);
+fn op_m<const C: bool>(buf: &mut String, x: f64, y: f64) {
+    num::<C>(buf, x * BP);
+    space(buf);
+    num::<C>(buf, y * BP);
     buf.push_str(" m");
 }
 
 #[inline]
-fn op_l(buf: &mut String, x: f64, y: f64) {
-    f2(buf, x * BP);
-    buf.push(' ');
-    f2(buf, y * BP);
+fn op_l<const C: bool>(buf: &mut String, x: f64, y: f64) {
+    num::<C>(buf, x * BP);
+    space(buf);
+    num::<C>(buf, y * BP);
     buf.push_str(" l");
 }
 
 #[inline]
-fn op_c(buf: &mut String, a: f64, b: f64, c: f64, d: f64, e: f64, f: f64) {
+fn op_c<const C: bool>(buf: &mut String, a: f64, b: f64, c: f64, d: f64, e: f64, f: f64) {
     for v in [a, b, c, d, e, f] {
-        f2(buf, v * BP);
-        buf.push(' ');
+        num::<C>(buf, v * BP);
+        space(buf);
     }
     buf.push('c');
 }
 
 const K: f64 = 0.5523;
+
+/// Small dots, in big points of radius, print as polygons of the same area: a square
+/// below `SPECK`, an octagon below `DOT`. Neither strays from the circle by more than
+/// 0.03 mm, under a printer pixel, and both cost far fewer bytes than four curves.
+const SPECK: f64 = 0.35;
+const DOT: f64 = 1.0;
+
+fn dot(buf: &mut String, x: f64, y: f64, r: f64) {
+    let (x, y, r) = (x * BP, y * BP, r * BP);
+    space(buf);
+    if r < SPECK {
+        let s = r * 1.7725;
+        f1(buf, x - s / 2.0);
+        space(buf);
+        f1(buf, y - s / 2.0);
+        space(buf);
+        f2(buf, s);
+        space(buf);
+        f2(buf, s);
+        buf.push_str(" re");
+        return;
+    }
+    let r = r * 1.0539;
+    for (k, (c, s)) in OCTAGON.iter().enumerate() {
+        if k > 0 {
+            space(buf);
+        }
+        f2(buf, x + r * c);
+        space(buf);
+        f2(buf, y + r * s);
+        buf.push_str(if k == 0 { " m" } else { " l" });
+    }
+    buf.push_str(" h");
+}
+
+const OCTAGON: [(f64, f64); 8] = [
+    (0.9239, 0.3827),
+    (0.3827, 0.9239),
+    (-0.3827, 0.9239),
+    (-0.9239, 0.3827),
+    (-0.9239, -0.3827),
+    (-0.3827, -0.9239),
+    (0.3827, -0.9239),
+    (0.9239, -0.3827),
+];
 
 impl Paint {
     pub fn new(gilt_vector: bool) -> Paint {
@@ -273,11 +364,25 @@ impl Paint {
     }
 
     fn path(&self, cmds: &[Cmd], buf: &mut String) {
+        if self.compact && cmds.iter().any(|c| matches!(c, Cmd::O(..))) {
+            for c in cmds {
+                match *c {
+                    Cmd::O(x, y, r) if r * BP < DOT => {
+                        let (cx, cy) = self.pj(x, y);
+                        let (ex, ey) = self.pj(x + r, y);
+                        dot(buf, cx, cy, ((ex - cx).powi(2) + (ey - cy).powi(2)).sqrt());
+                    }
+                    _ if self.has_pj() => write_path::<true>(&self.projected(&[*c]), buf),
+                    _ => write_path::<true>(&[*c], buf),
+                }
+            }
+            return;
+        }
         if self.has_pj() {
             let p = self.projected(cmds);
-            write_path(&p, buf);
+            if self.compact { write_path::<true>(&p, buf) } else { write_path::<false>(&p, buf) }
         } else {
-            write_path(cmds, buf);
+            if self.compact { write_path::<true>(cmds, buf) } else { write_path::<false>(cmds, buf) }
         }
     }
 
@@ -464,25 +569,25 @@ impl Paint {
     }
 }
 
-fn write_path(cmds: &[Cmd], buf: &mut String) {
+fn write_path<const C: bool>(cmds: &[Cmd], buf: &mut String) {
     for c in cmds {
-        buf.push(' ');
+        space(buf);
         match *c {
-            Cmd::M(x, y) => op_m(buf, x, y),
-            Cmd::L(x, y) => op_l(buf, x, y),
-            Cmd::C(a, b, c2, d, e, f) => op_c(buf, a, b, c2, d, e, f),
+            Cmd::M(x, y) => op_m::<C>(buf, x, y),
+            Cmd::L(x, y) => op_l::<C>(buf, x, y),
+            Cmd::C(a, b, c2, d, e, f) => op_c::<C>(buf, a, b, c2, d, e, f),
             Cmd::Z => buf.push('h'),
             Cmd::O(x, y, r) => {
                 let k = r * K;
-                op_m(buf, x + r, y);
-                buf.push(' ');
-                op_c(buf, x + r, y + k, x + k, y + r, x, y + r);
-                buf.push(' ');
-                op_c(buf, x - k, y + r, x - r, y + k, x - r, y);
-                buf.push(' ');
-                op_c(buf, x - r, y - k, x - k, y - r, x, y - r);
-                buf.push(' ');
-                op_c(buf, x + k, y - r, x + r, y - k, x + r, y);
+                op_m::<C>(buf, x + r, y);
+                space(buf);
+                op_c::<C>(buf, x + r, y + k, x + k, y + r, x, y + r);
+                space(buf);
+                op_c::<C>(buf, x - k, y + r, x - r, y + k, x - r, y);
+                space(buf);
+                op_c::<C>(buf, x - r, y - k, x - k, y - r, x, y - r);
+                space(buf);
+                op_c::<C>(buf, x + k, y - r, x + r, y - k, x + r, y);
                 buf.push_str(" h");
             }
         }

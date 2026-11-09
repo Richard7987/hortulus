@@ -42,7 +42,7 @@ use paint::Paint;
 
 /// The page as text: width height x0 y0 x1 y1 header page (title x0 y0 x1 y1),
 /// then one x0 y0 x1 y1 per text line, in TeX points; `nan` for "none".
-pub fn page(spec_text: &str, settings_text: &str) -> Result<(Paint, f64, f64), String> {
+pub fn page(spec_text: &str, settings_text: &str, compact: bool) -> Result<(Paint, f64, f64), String> {
     let n: Vec<f64> = spec_text.split_ascii_whitespace().map(|s| s.parse::<f64>().map_err(|_| format!("bad number \"{}\"", s))).collect::<Result<_, _>>()?;
     if n.len() < 12 {
         return Err("page spec is too short".into());
@@ -75,6 +75,7 @@ pub fn page(spec_text: &str, settings_text: &str) -> Result<(Paint, f64, f64), S
         gilt_dpi: set.giltdpi,
         gilt_env: set.giltenv,
         gilt_look: set.giltlook,
+        compact,
     };
     let pt = compose::page(&spec)?;
     Ok((pt, spec.width, spec.height))
@@ -109,7 +110,7 @@ mod wasm {
         let run = || -> Result<Vec<u8>, String> {
             let spec = std::str::from_utf8(&buf[..spec_len]).map_err(|e| e.to_string())?;
             let set = std::str::from_utf8(&buf[spec_len..]).map_err(|e| e.to_string())?;
-            let (pt, w, h) = super::page(spec, set)?;
+            let (pt, w, h) = super::page(spec, set, true)?;
             Ok(super::pdfout::encode(&pt, w, h))
         };
         reply(run())

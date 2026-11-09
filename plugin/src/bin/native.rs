@@ -1,5 +1,5 @@
 //! Oracle driver: paints a page natively for comparison with the Lua generator.
-//! usage: native <spec file> <settings> <out prefix>
+//! usage: native <spec file> <settings> <out prefix> [compact]
 
 use std::fmt::Write as _;
 
@@ -7,7 +7,7 @@ fn main() {
     let a: Vec<String> = std::env::args().collect();
     let spec = std::fs::read_to_string(&a[1]).unwrap();
     let t = std::time::Instant::now();
-    let (pt, w, h) = hortulus::page(&spec, &a[2]).unwrap();
+    let (pt, w, h) = hortulus::page(&spec, &a[2], a.get(4).is_some_and(|s| s == "compact")).unwrap();
     let dt = t.elapsed().as_secs_f64();
     std::fs::write(format!("{}.body", a[3]), &pt.out).unwrap();
     let mut r = String::new();
